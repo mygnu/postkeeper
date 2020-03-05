@@ -4,7 +4,45 @@ version = "0.1.0"
 authors = ["Enhance Ltd <backend@enhance.com>"]
 edition = "2018"
 default-run = "postkeeper"
+categories = ["email"]
+keywords = ["email", "milter", "allowlist", "blocklist", "blacklist", "whitelist"]
+license = "GPL-3.0-or-later"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+clap = { version = "2.33", features = ["yaml"] }
+daemonize = "0.4"
+
+# Metadata for Debian Package Builder `cargo-deb`
+[package.metadata.deb]
+maintainer = "Enhance Ltd <backend@enhance.com>"
+copyright = "2020, Enhance Ltd <backend@enhance.com>"
+license-file = ["LICENSE"]
+extended-description = """\
+Simple Allow/Block list milter for postfix\
+"""
+# try autogenerate dependencies for .deb installer
+depends = "$auto"
+# debian application category
+section = "mail"
+priority = "optional"
+# deb package maintainer scripts
+maintainer-scripts = "assets/maintainer-scripts"
+# files to copy on install
+assets = [
+    ["target/release/postkeeper", "/usr/sbin/", "755"],
+    ["assets/postkeeper.sh", "/etc/init.d/postkeeper", "755"],
+    ["assets/postkeeper.service", "/etc/systemd/system/", "755"],
+    ["assets/etc/postkeeper.conf", "/etc/postkeeper/", "664"],
+    ["assets/etc/allow.map", "/etc/postkeeper/", "664"],
+    ["assets/etc/block.map", "/etc/postkeeper/", "664"],
+    ["README.md", "usr/share/doc/postkeeper/README", "644"],
+]
+# do not overwrite these files on package update
+conf-files = [
+    "/etc/postkeeper/postkeeper.conf", 
+    "/etc/postkeeper/allow.map", 
+    "/etc/postkeeper/block.map" 
+    ]

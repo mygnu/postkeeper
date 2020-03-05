@@ -1,0 +1,8 @@
+[Unit]
+Description=Postkeeper Milter
+
+[Service]
+ExecStart=/usr/sbin/postkeeper
+
+[Install]
+WantedBy=multi-user.target
