@@ -1,0 +1,28 @@
+name: postkeeper
+version: 0.1.0
+author: Enhance Ltd <backend@enhance.com>
+about: allow/block list milter implementation
+args:
+    - pidfile:
+        short: P
+        long: pidfile
+        value_name: PIDFILE
+        help: path to process id file
+        takes_value: true
+    - logfile:
+        short: L
+        long: logfile
+        value_name: LOGFILE
+        help: path to logfile
+        takes_value: true
+    - foreground:
+        short: f
+        long: foreground
+        help: run in foreground
+        takes_value: false
+        conflicts_with:
+            - pidfile
+            - logfile
+                            
+
+

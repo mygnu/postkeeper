@@ -1,0 +1,35 @@
+stages:
+  - build_and_unit_tests
+
+
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+  TESTS_INSTANCE_BASENAME: postkeeper-test
+  CARGO_HOME: ${CI_PROJECT_DIR}/.cargo
+  SERVICE_VERSION: 0.1.0
+
+# Builds the postkeeper artefacts and runs the unit tests
+build_and_unit_tests:
+  image: registry.dev.enhance.com/backend/builder:ubuntu-pk1.41
+  stage: build_and_unit_tests
+  artifacts:
+    paths:
+      - target/release/postkeeper
+      - "target/debian/postkeeper_${SERVICE_VERSION}_amd64.deb"
+  before_script:
+    - rustc --version && cargo --version
+    - cache-s3 --version
+    # restoring cache before we build the project to avoid dependencies recompilation
+    - cache-s3 restore --max-age "15 days" --git-branch ${CI_PROJECT_NAME}
+  after_script:
+    # after the build has finished we upload the dependencies to S3
+    - cache-s3 save -p ${CARGO_HOME} -p target/release --git-branch ${CI_PROJECT_NAME}
+  script:
+     - eval $(ssh-agent -s)
+     - ssh-add <(echo "$SSH_KEY" | base64 -d)
+     - mkdir -p ~/.ssh
+     - chmod 700 ~/.ssh
+     - cargo build --release
+     # create debian package
+     - cargo-deb
+     - RUST_LOG=postkeeper=trace cargo test --release -- --nocapture --test-threads=1
