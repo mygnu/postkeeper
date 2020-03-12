@@ -1,6 +1,9 @@
 # this script is invoked at debian package pre-install
-USERNAME=postkeeper
+NAME=postkeeper
+mkdir -p "/etc/${NAME}"
+mkdir -p "/var/run/${NAME}"
 
-adduser --system --disabled-login --group --no-create-home $USERNAME
-mkdir -p /etc/$USERNAME
-mkdir -p /var/run/$USERNAME
+touch "/var/log/${name}.log"
+
+adduser --system --disabled-login --group --no-create-home $NAME
+

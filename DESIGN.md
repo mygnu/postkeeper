@@ -4,7 +4,7 @@
 We are going to use `milter` crate for setting up the milter, `milter` [crate](https://docs.rs/milter/) is in turn a rust wrapper around `libmilter` library by `sendmail` maintainers. libmilter takes care of communication to `MTA` via a unix socket file and/or a tcp socket (allows us to run postkeeper in a separate docker container).
 
 ## installation
-`postkeeper` is installed in `/usr/sbin/postkeeper`. Main config files will be stored in `/etc/postkeeper/` and `rundir` would be `/var/run/postkeeper/`. `postkeeper` has three main config files, daemon configuration lives in `postkeeper.conf` (ini format) and two map files `allow.map` and `block.map`. Running in daemon mode will create `postkeeper.pid` and using unix sockets will crate `postkeeper.sock` in the `rundir`.
+`postkeeper` is installed in `/usr/sbin/postkeeper`. Main config files will be stored in `/etc/postkeeper/` and `rundir` would be `/var/run/postkeeper/`. `postkeeper` has three main config files, daemon configuration lives in `postkeeper.ini` (ini format) and two map files `allow.map` and `block.map`. Running in daemon mode will create `postkeeper.pid` and using unix sockets will crate `postkeeper.sock` in the `rundir`.
 
 ## debian package
 debian package is provided for installation.

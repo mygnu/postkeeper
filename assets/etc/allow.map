@@ -1,0 +1,11 @@
+# Map file to configure allow list per recipient. 
+# A map is a whitespace separated list of email addresses
+
+# First value is the key or the recipient who is allowing
+# rest of the list are email address that would be allowed
+
+# Each map value starts at the beginning of the line
+# Multiline maps are allowed as consequent lines start with a whitespace character[s].
+
+# line text starting with `#` treated as comment and ignored. either at the beginiing of the line 
+# and also in multiline context
