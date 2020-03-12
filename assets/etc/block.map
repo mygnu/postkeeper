@@ -1,0 +1,11 @@
+# Map file to configure block list per recipient. 
+# A map is a whitespace separated list of email addresses
+
+# First value is the key or the recipient who is blocking
+# rest of the list are email address that would be blocked from delivering emails
+
+# Each map value starts at the beginning of the line
+# Multiline maps are allowed as consequent lines start with a whitespace character[s].
+
+# line text starting with `#` treated as comment and ignored. either at the beginiing of the line 
+# and also in multiline context

@@ -1,5 +1,5 @@
 name: postkeeper
-version: 0.1.0
+version: 0.1.1
 author: Enhance Ltd <backend@enhance.com>
 about: allow/block list milter implementation
 args:
@@ -7,13 +7,49 @@ args:
         short: P
         long: pidfile
         value_name: PIDFILE
-        help: path to process id file
+        help: path to PID file, default "/var/run/postkeeper/postkeeper.pid"
+        takes_value: true
+    - socket:
+        short: p
+        long: socket
+        value_name: SOCKET
+        help: path to socket file, default "/var/run/postkeeper/postkeeper.sock"
         takes_value: true
     - logfile:
         short: L
         long: logfile
         value_name: LOGFILE
         help: path to logfile
+        takes_value: true
+    - conf:
+        short: c
+        long: conf
+        value_name: CONF
+        help: path to config file, default "/etc/postkeeper/postkeeper.ini"
+        takes_value: true
+        required: false
+    - user:
+        short: u
+        long: user
+        value_name: USER
+        help: daemon username, default "postkeeper" 
+    - group:
+        short: g
+        long: group
+        value_name: GROUP
+        help: daemon groupname, default "postkeeper" 
+        takes_value: true
+    - allow-map:
+        short: a
+        long: allow-map
+        value_name: ALLOW_MAP
+        help: path to map file, default "/etc/postkeeper/allow.map" 
+        takes_value: true
+    - block-map:
+        short: b
+        long: block-map
+        value_name: BLOCK_MAP
+        help: path to map file, default "/etc/postkeeper/block.map" 
         takes_value: true
     - foreground:
         short: f
@@ -23,6 +59,11 @@ args:
         conflicts_with:
             - pidfile
             - logfile
-                            
+    - verbose:
+        long: verbose
+        short: v
+        multiple: true
+        help: define verbosity of log output, ranges between `-v` to `-vvvv`
+        takes_value: false
 
 

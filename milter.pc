@@ -1,0 +1,7 @@
+prefix=/usr
+libdir=${prefix}/lib/x86_64-linux-gnu
+
+Name: milter
+Description: Sendmail Mail Filter API (Milter)
+Version: 8.15.2
+Libs: -L${libdir} -lmilter

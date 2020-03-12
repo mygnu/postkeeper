@@ -19,7 +19,7 @@ USER=postkeeper
 GROUP=postkeeper
 PIDFILE=$RUNDIR/$NAME.pid
 SOCKETFILE=$RUNDIR/$NAME.sock
-CONFIGFILE=/etc/postkeeper/postkeeper.conf
+CONFIGFILE=/etc/postkeeper/postkeeper.ini
 
 test -x $DAEMON || exit 0
 
