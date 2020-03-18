@@ -1,5 +1,5 @@
 name: postkeeper
-version: 0.1.1
+version: 0.2.0
 author: Enhance Ltd <backend@enhance.com>
 about: allow/block list milter implementation
 args:
@@ -65,5 +65,15 @@ args:
         multiple: true
         help: define verbosity of log output, ranges between `-v` to `-vvvv`
         takes_value: false
-
+    - test-config:
+        long: test-config
+        short: t
+        help: test config and exit with success or error
+        takes_value: false
+    - on-block-action:
+        long: on-block-action
+        help: action to take on match with block list 
+        takes_value: true
+        possible_values: ["reject", "discard", "continue"]
+           
 

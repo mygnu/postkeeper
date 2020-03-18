@@ -1,6 +1,5 @@
 # Design
 
-
 We are going to use `milter` crate for setting up the milter, `milter` [crate](https://docs.rs/milter/) is in turn a rust wrapper around `libmilter` library by `sendmail` maintainers. libmilter takes care of communication to `MTA` via a unix socket file and/or a tcp socket (allows us to run postkeeper in a separate docker container).
 
 ## installation

@@ -7,5 +7,20 @@
 # Each map value starts at the beginning of the line
 # Multiline maps are allowed as consequent lines start with a whitespace character[s].
 
-# line text starting with `#` treated as comment and ignored. either at the beginiing of the line 
-# and also in multiline context
+# line text starting with `#` treated as comment and ignored. either at the beginning of the line 
+# and also in multiline context 
+# comments are not permitted on lines with data
+
+# values are treated case insensitive
+
+# teresa@example.com gay@example.com candice@example.net cornelius@example.net jarret@example.org zachariah@example.org wilfred@example.com
+#    # this is allowed comment
+#    hildegard@example.com taurean@example.org 
+
+# alayna@example.com claude@example.net stephan@example.net 
+#    jordan@example.net 
+#    juston@example.com 
+#    beatrice@example.org 
+#    santos@example.org
+#    chelsey@example.net 
+#    ines@example.com

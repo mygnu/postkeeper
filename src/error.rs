@@ -8,10 +8,7 @@ pub struct Error {
 
 /// This enumeration is the main information about an error. Every Error type
 /// must be constructed with at least this information, that allows to differentiate
-/// errors between each other with minimal information. The information of the
-/// Kind is always related to an entity, but the entity can or cannot be known
-/// at the moment of the error, therefore is it reported as an Optional field in
-/// the main Error type struct.
+/// errors between each other with minimal information.
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Kind {
     ConfigError,
@@ -66,17 +63,37 @@ impl Default for Error {
 pub type Result<T> = std::result::Result<T, Error>;
 
 use ini::ini::Error as IniError;
-use std::io::ErrorKind;
+use std::io;
 
 impl From<IniError> for Error {
     fn from(e: IniError) -> Self {
         match e {
-            IniError::Io(ioe) => match ioe.kind() {
-                ErrorKind::NotFound => Error::config_err("Config file not found"),
-                ErrorKind::PermissionDenied => Error::config_err("Could not Read Config file"),
-                _ => Error::config_err(ioe),
-            },
+            IniError::Io(ioe) => ioe.into(),
             IniError::Parse(e) => Error::config_err(e),
         }
+    }
+}
+
+impl From<io::Error> for Error {
+    fn from(ioe: io::Error) -> Self {
+        match ioe.kind() {
+            io::ErrorKind::NotFound => Error::config_err("File not found"),
+            io::ErrorKind::PermissionDenied => {
+                Error::config_err("Permission denied to access file")
+            }
+            _ => Error::config_err(ioe),
+        }
+    }
+}
+
+impl From<std::time::SystemTimeError> for Error {
+    fn from(e: std::time::SystemTimeError) -> Self {
+        Error::with_msg(Kind::Internal, e)
+    }
+}
+
+impl From<std::num::ParseIntError> for Error {
+    fn from(e: std::num::ParseIntError) -> Self {
+        Self::config_err(e)
     }
 }

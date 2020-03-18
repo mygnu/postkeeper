@@ -1,14 +1,35 @@
-use crate::consts::*;
+//! Postkeeper milter and daemon configuration
+
+use crate::consts::{arg, default};
 use crate::prelude::*;
 use clap::ArgMatches;
 use ini::Ini;
+use once_cell::sync::OnceCell;
 use std::path::{Path, PathBuf};
+use std::time::Duration;
+
+// holds config as a global state
+// later used by milter callback functions
+static CONFIG: OnceCell<Config> = OnceCell::new();
+
+pub fn init_global_conf(config: Config) {
+    CONFIG
+        .set(config)
+        .expect("configuration already initialized")
+}
+
+pub fn global_conf() -> &'static Config {
+    CONFIG.get().expect("configuration not initialized")
+}
 
 /// holds Configuration for milter and daemon
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Config {
     pid_file: PathBuf,
     log_file: PathBuf,
+    log_level: log::Level,
+    on_block_action: milter::Status,
+    reload_interval: Duration,
     allow_map: PathBuf,
     block_map: PathBuf,
     socket: String,
@@ -58,7 +79,28 @@ impl Config {
             conf.group = Some(group);
         }
 
-        trace!("Config Loaded: {:#?}", &conf);
+        if let Some(on_block_action) =
+            matches
+                .value_of(arg::ON_BLOCK_ACTION)
+                .map(|on_block_action| match on_block_action {
+                    "discard" => milter::Status::Discard,
+                    "continue" => milter::Status::Continue,
+                    _ => milter::Status::Reject,
+                })
+        {
+            conf.on_block_action = on_block_action;
+        }
+
+        if matches.is_present(arg::VERBOSE) {
+            // log level progerssion error!, warn!, info!, debug! and trace!
+            conf.log_level = match matches.occurrences_of(arg::VERBOSE) {
+                0 => log::Level::Error,
+                1 => log::Level::Warn,
+                2 => log::Level::Info,
+                3 => log::Level::Debug,
+                _ => log::Level::Trace,
+            };
+        }
 
         Ok(conf)
     }
@@ -71,49 +113,54 @@ impl Config {
         let mut state = Valid;
 
         if !is_socket_valid(self.socket()) {
-            error!("{:?} is not a valid socket", self.socket());
+            log::error!("{:?} socket cannot be used", self.socket());
             state = Invalid
         }
 
-        trace!("Socket is valid");
-
-        if !self.allow_map().is_file() {
-            error!("{:?} is not a valid file", self.allow_map());
+        if file_permissions(self.allow_map_path()).is_err() {
+            log::error!("{:?} is not a valid file", self.allow_map_path());
             state = Invalid
         }
-        trace!("allow.map is valid");
 
-        if !self.log_file().is_file() {
-            error!("{:?} is not a valid file", self.log_file());
+        if file_permissions(self.block_map_path()).is_err() {
+            log::error!("{:?} is not a valid file", self.block_map_path());
             state = Invalid
         }
-        trace!("log file is valid");
 
-        if !self.block_map().is_file() {
-            error!("{:?} is not a valid file", self.block_map());
-            state = Invalid
+        match file_permissions(self.log_file_path()) {
+            Ok(permission) => {
+                if permission == FilePermission::ReadOnly {
+                    log::error!("{:?} must be writable", self.log_file_path());
+                    state = Invalid;
+                }
+            }
+            _ => {
+                log::error!("{:?} is not a valid file", self.log_file_path());
+                state = Invalid
+            }
         }
-        trace!("block.map is valid");
 
         if state == Invalid {
             Err(Error::config_err("Invalid Configuration!"))
         } else {
-            trace!("Config validation finished with success.");
+            log::trace!("Config validation success!");
             Ok(())
         }
     }
 
-    pub fn allow_map(&self) -> &PathBuf {
+    pub fn allow_map_path(&self) -> &PathBuf {
         &self.allow_map
     }
-    pub fn block_map(&self) -> &PathBuf {
+
+    pub fn block_map_path(&self) -> &PathBuf {
         &self.block_map
     }
-    pub fn pid_file(&self) -> &PathBuf {
+
+    pub fn pid_file_path(&self) -> &PathBuf {
         &self.pid_file
     }
 
-    pub fn log_file(&self) -> &PathBuf {
+    pub fn log_file_path(&self) -> &PathBuf {
         &self.log_file
     }
 
@@ -129,13 +176,25 @@ impl Config {
         self.group.as_deref()
     }
 
+    pub fn log_level(&self) -> log::Level {
+        self.log_level
+    }
+
+    pub fn on_block_action(&self) -> milter::Status {
+        self.on_block_action
+    }
+
+    pub fn reload_interval(&self) -> Duration {
+        self.reload_interval
+    }
+
     /// builds config from config ini path
     /// uses default values if not defined in the config
     /// to allow only define variable that require a change
     /// NOTE:
     /// Errors if cannot read config file
     fn from_conf_file(path: impl AsRef<Path>) -> Result<Self> {
-        trace!("loading config from path {:?}", path.as_ref());
+        println!("loading config from path {:?}", path.as_ref());
 
         let ini = Ini::load_from_file(path)?;
         let section = ini.general_section();
@@ -168,6 +227,40 @@ impl Config {
         let user = section.get("user").map(String::from);
         let group = section.get("group").map(String::from);
 
+        let log_level = section
+            .get("log_level")
+            .map(|level| {
+                // log level progerssion log::error!, log::warn!, log::info!, log::debug! and log::trace!
+                // default to error
+                match level {
+                    "warn" => log::Level::Warn,
+                    "info" => log::Level::Info,
+                    "debug" => log::Level::Debug,
+                    "trace" => log::Level::Trace,
+                    _ => log::Level::Error,
+                }
+            })
+            .unwrap_or_else(|| log::Level::Error);
+
+        let on_block_action = section
+            .get("on_block_action")
+            .map(|on_block_action| match on_block_action {
+                "discard" => milter::Status::Discard,
+                "continue" => milter::Status::Continue,
+                _ => default::MILTER_STATUS,
+            })
+            .unwrap_or_else(|| default::MILTER_STATUS);
+
+        let reload_interval = section
+            .get("reload_interval")
+            .unwrap_or_else(|| default::RELOAD_INTERVAL)
+            .parse::<u64>()
+            .map(Duration::from_secs)
+            .map_err(|e| {
+                let msg = format!("Error parsing reload_interval {:?}", e);
+                Error::config_err(msg)
+            })?;
+
         Ok(Self {
             allow_map,
             block_map,
@@ -176,6 +269,9 @@ impl Config {
             socket,
             user,
             group,
+            log_level,
+            on_block_action,
+            reload_interval,
         })
     }
 }
@@ -188,14 +284,16 @@ enum Validation {
 }
 
 // validates socket address for format and connectivity
+// milter would fail if socket is already in use
 fn is_socket_valid(socket: &str) -> bool {
-    trace!("validating socket {}", socket);
+    use std::net::TcpListener;
+    log::trace!("validating socket {}", socket);
     // example socket `inet:11210@127.0.0.1`
     let parts: Vec<&str> = socket.split(':').collect();
 
     // socket must start with `inet`
     if parts.get(0) != Some(&"inet") {
-        trace!("socket must start with `inet`");
+        log::trace!("socket must start with `inet`");
         return false;
     }
     let addr = parts.get(1);
@@ -210,31 +308,79 @@ fn is_socket_valid(socket: &str) -> bool {
         addr.get(0).unwrap_or(&"")
     );
 
-    trace!("Checking connectivity to `{}`", tcp_addr);
+    log::trace!("Checking connectivity to `{}`", tcp_addr);
 
-    // check if you can connect to the socket
-    std::net::TcpListener::bind(tcp_addr).is_ok()
+    // try and check socket connectivity
+    if TcpListener::bind(&tcp_addr).is_ok() {
+        true
+    } else {
+        log::debug!("Can not connect to {}", tcp_addr);
+        false
+    }
+}
+
+#[derive(PartialEq)]
+enum FilePermission {
+    ReadOnly,
+    Writable,
+}
+
+// check if path can be written to
+// returns file permission enum indicating ReadOnly or Writable
+// error if file does not exist or user doesn't have permission to read it
+fn file_permissions(path: impl AsRef<Path>) -> Result<FilePermission> {
+    match std::fs::metadata(path.as_ref()) {
+        Ok(metadata) => {
+            let permission = if metadata.permissions().readonly() {
+                FilePermission::ReadOnly
+            } else {
+                FilePermission::Writable
+            };
+            Ok(permission)
+        }
+        Err(e) => {
+            log::debug!(
+                "could not get metadata for {:?}, error {:?}",
+                path.as_ref(),
+                e
+            );
+            Err(e.into())
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
+    use std::sync::Once;
+
+    static INIT_LOGGING: Once = Once::new();
+
+    fn init_logging() {
+        INIT_LOGGING.call_once(|| {
+            simple_logger::init_by_env();
+        });
+    }
 
     #[test]
     fn default_config_must_load() {
+        init_logging();
         // default postkeeper must load
         let config = Config::from_conf_file("assets/etc/postkeeper.ini")
             .expect("Default postkeeper.ini is should load");
 
-        assert_eq!(config.pid_file(), &PathBuf::from(default::PIDFILE));
-        assert_eq!(config.log_file(), &PathBuf::from(default::LOGFILE));
+        assert_eq!(config.pid_file_path(), &PathBuf::from(default::PIDFILE));
+        assert_eq!(config.log_file_path(), &PathBuf::from(default::LOGFILE));
 
         assert_eq!(config.socket(), default::SOCKET);
 
-        assert_eq!(config.allow_map(), &PathBuf::from(default::ALLOW_MAP));
+        assert_eq!(config.allow_map_path(), &PathBuf::from(default::ALLOW_MAP));
 
-        assert_eq!(config.block_map(), &PathBuf::from(default::BLOCK_MAP));
+        assert_eq!(config.on_block_action(), milter::Status::Reject);
+        assert_eq!(config.log_level(), log::Level::Error);
+
+        assert_eq!(config.block_map_path(), &PathBuf::from(default::BLOCK_MAP));
 
         assert_eq!(config.user(), Some("postkeeper"));
         assert_eq!(config.group(), Some("postkeeper"));
@@ -242,50 +388,55 @@ mod tests {
 
     #[test]
     fn non_existant_config() {
+        init_logging();
         let err =
             Config::from_conf_file("non-existant.ini").expect_err("Config file should not load");
-        assert_eq!(
-            err,
-            Error::with_msg(Kind::ConfigError, "Config file not found")
-        )
+        assert_eq!(err, Error::config_err("File not found"))
     }
 
     #[test]
     fn custom_config_values() {
+        init_logging();
         let config =
             Config::from_conf_file("tests/conf.d/valid.ini").expect("Custom ini is should load");
 
         assert_eq!(
-            config.pid_file(),
+            config.pid_file_path(),
             &PathBuf::from("tests/sandbox/postkeeper.pid")
         );
         assert_eq!(
-            config.log_file(),
+            config.log_file_path(),
             &PathBuf::from("tests/sandbox/postkeeper.log")
         );
 
         assert_eq!(config.socket(), "inet:11210@127.0.0.1");
 
         assert_eq!(
-            config.allow_map(),
+            config.allow_map_path(),
             &PathBuf::from("tests/sandbox/allow.map")
         );
 
         assert_eq!(
-            config.block_map(),
+            config.block_map_path(),
             &PathBuf::from("tests/sandbox/block.map")
         );
+
+        assert_eq!(config.user(), Some("user"));
+        assert_eq!(config.group(), Some("group"));
+        assert_eq!(config.log_level(), log::Level::Trace);
+        assert_eq!(config.on_block_action(), milter::Status::Discard);
 
         assert_eq!(config.validate(), Ok(()))
     }
 
     #[test]
     fn custom_config_invalid_allow_map() {
+        init_logging();
         let config = Config::from_conf_file("tests/conf.d/invalid-allow-map.ini")
             .expect("Custom ini is should load");
 
         assert_eq!(
-            config.allow_map(),
+            config.allow_map_path(),
             &PathBuf::from("tests/sandbox/allow-non-existant.map")
         );
 
@@ -297,11 +448,12 @@ mod tests {
 
     #[test]
     fn custom_config_invalid_block_map() {
+        init_logging();
         let config = Config::from_conf_file("tests/conf.d/invalid-block-map.ini")
             .expect("Custom ini is should load");
 
         assert_eq!(
-            config.block_map(),
+            config.block_map_path(),
             &PathBuf::from("tests/sandbox/block-non-existant.map")
         );
 
@@ -313,6 +465,7 @@ mod tests {
 
     #[test]
     fn custom_config_invalid_socket() {
+        init_logging();
         let config = Config::from_conf_file("tests/conf.d/invalid-socket.ini")
             .expect("Custom ini is should load");
 
@@ -325,11 +478,30 @@ mod tests {
     }
 
     #[test]
-    fn socket_address() {
+    fn custom_config_invalid_logfile() {
+        init_logging();
+        let config = Config::from_conf_file("tests/conf.d/invalid-logfile.ini")
+            .expect("Custom ini is should load");
+
+        assert_eq!(
+            config.log_file_path(),
+            &PathBuf::from("tests/sandbox/readonly.log")
+        );
+
+        assert_eq!(
+            config.validate(),
+            Err(Error::config_err("Invalid Configuration!"))
+        )
+    }
+
+    #[test]
+    fn test_socket_address() {
+        init_logging();
         assert!(is_socket_valid("inet:1234@localhost"));
         assert!(is_socket_valid("inet:1234@127.0.0.1"));
 
         assert!(!is_socket_valid(""));
+        assert!(!is_socket_valid("inet:@127.0.0.1"));
         assert!(!is_socket_valid("1234@localhost"));
         assert!(!is_socket_valid("inet:1234localhost"));
         assert!(!is_socket_valid("inet:123@8.8.8.8"));

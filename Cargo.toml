@@ -1,6 +1,6 @@
 [package]
 name = "postkeeper"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Enhance Ltd <backend@enhance.com>"]
 edition = "2018"
 default-run = "postkeeper"
@@ -14,11 +14,13 @@ readme = "README.md"
 [dependencies]
 clap = { version = "2.33", features = ["yaml"] }
 daemonize = "0.4"
+lazy_static = "1.4"
 libc = "0.2"
-milter = "0.2"
-rust-ini = "0.15"
 log= "0.4"
-simple_logger= "1.6"
+milter = "0.2"
+once_cell = "1.3"
+rust-ini = "0.15"
+simple_logger = "1.6" # simple_logger allows us to set logging level from config
 
 [dev-dependencies]
 pretty_assertions = "0.6"
