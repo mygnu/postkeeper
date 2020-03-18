@@ -1,0 +1,15 @@
+# this script is invoked at debian package post-install
+NAME=postkeeper
+LOG_FILE=/var/log/${NAME}.log
+
+## create run dir if not exist
+mkdir -p /var/run/${NAME}
+
+# create log file if not there
+touch ${LOG_FILE}
+chmod 664 ${LOG_FILE}
+chgrp $NAME ${LOG_FILE}
+
+## make files accessible to postkeeper with its group
+chgrp $NAME -R /etc/${NAME}
+

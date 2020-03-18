@@ -6,7 +6,7 @@
 ### BEGIN INIT INFO
 # Provides:		postkeeper
 # Short-Description: Manage PostKeeper service/daemon
-# Description: PostKeep provides allow/bloc list milter service for postfix/sendmail
+# Description: PostKeep provides allow/block list milter service for postfix/sendmail
 
 ### END INIT INFO
 
@@ -18,7 +18,6 @@ RUNDIR=/var/run/postkeeper
 USER=postkeeper
 GROUP=postkeeper
 PIDFILE=$RUNDIR/$NAME.pid
-SOCKETFILE=$RUNDIR/$NAME.sock
 CONFIGFILE=/etc/postkeeper/postkeeper.ini
 
 test -x $DAEMON || exit 0
@@ -49,14 +48,20 @@ is_running() {
     [ -f "$PIDFILE" ] && ps -p `get_pid` > /dev/null 2>&1
 }
 
-
-DAEMON_OPTS="-c $CONFIGFILE -u $USER -g $GROUP -P $PIDFILE -p $SOCKETFILE"
+# run daemon with /etc/postkeeper.ini
+DAEMON_OPTS="-c $CONFIGFILE -u $USER -g $GROUP"
 
 start() {
     echo -n "Starting $DESC"
     if is_running; then
         echo "$DESC is already running"
         exit 0
+    fi
+
+    # test config and exit on fail
+    $DAEMON $DAEMON_OPTS -t -v
+    if [[ $? -ne 0 ]] ; then
+        exit 1
     fi
 
     # Create the run directory if it doesn't exist

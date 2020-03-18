@@ -8,18 +8,21 @@
 mod config;
 mod consts;
 mod error;
+mod maps;
 mod milter;
 mod prelude;
 
-#[macro_use]
-extern crate log;
 extern crate simple_logger;
 
 use crate::config::Config;
 use clap::{load_yaml, App};
 use consts::*;
 use daemonize::Daemonize;
-use std::{fs::OpenOptions, process};
+use std::{
+    fs::OpenOptions,
+    io::{Seek, SeekFrom},
+    process,
+};
 
 fn main() {
     let yaml = load_yaml!("cli.yml");
@@ -28,73 +31,94 @@ fn main() {
     app.write_help(&mut help).expect("Unable to get app help");
     let matches = app.get_matches();
 
-    // log level progerssion error!, warn!, info!, debug! and trace!
-    let log_level = match matches.occurrences_of(arg::VERBOSE) {
-        0 => log::Level::Error,
-        1 => log::Level::Warn,
-        2 => log::Level::Info,
-        3 => log::Level::Debug,
-        4 | _ => log::Level::Trace,
-    };
-
-    simple_logger::init_with_level(log_level).expect("Logger Double Initialized");
-
-    trace!("Logger initialized with {:?}", log_level);
-
     let config = match Config::from_args(&matches) {
         Ok(config) => config,
         Err(e) => {
-            error!("{}", e);
+            log::error!("{}", e);
             process::exit(1);
         }
     };
 
+    simple_logger::init_with_level(config.log_level()).expect("Logger Double Initialized");
+
+    log::info!("Config Loaded: {:#?}", &config);
+
     // exit with error if config is not valid
     if let Err(e) = config.validate() {
-        error!("{}", e);
+        log::error!("{}", e);
         process::exit(1);
+    }
+
+    // exit early if we only want to test config
+    if matches.is_present(arg::TEST_CONFIG) {
+        log::debug!("Config test passed");
+        process::exit(0);
+    }
+
+    if let Err(e) = maps::load_allow_map(config.allow_map_path()) {
+        log::error!("Failed to load {:?}, {}", config.allow_map_path(), e);
+        process::exit(1)
+    }
+
+    if let Err(e) = maps::load_block_map(config.block_map_path()) {
+        log::error!("Failed to load {:?}, {}", config.block_map_path(), e);
+        process::exit(1)
     }
 
     // run in forground if cli arg is present otherwise
     // daemonize the process
     if matches.is_present(arg::FOREGROUND) {
-        milter::run(&config);
+        milter::run(config)
     } else {
-        let mut daemonize = Daemonize::new().pid_file(config.pid_file());
+        let mut daemonize = Daemonize::new()
+            .working_directory(default::RUN_DIR) // default is "/"
+            .pid_file(config.pid_file_path());
 
         // dorp privileges to user and/or group if present in config
         if let Some(user) = config.user() {
+            log::debug!("Setting Daemon user to {}", user);
             daemonize = daemonize.user(user)
         }
 
         if let Some(group) = config.group() {
+            log::debug!("Setting Daemon group to {}", group);
             daemonize = daemonize.group(group)
         }
 
         // use the log file path for daemon stdout/stderr
-        let stderr = OpenOptions::new()
+        let err_file = OpenOptions::new()
             .write(true)
-            .create(true)
-            .open(config.log_file())
+            .open(config.log_file_path())
             .unwrap_or_else(|_| {
-                error!("Failed to open log file {:?}", config.log_file());
+                log::error!("Failed to open log file {:?}", config.log_file_path());
                 process::exit(1);
             });
 
-        let stdout = stderr.try_clone().unwrap_or_else(|_| {
-            error!("Failed to clone log file {:?} handle", config.log_file());
+        let mut out_file = err_file.try_clone().unwrap_or_else(|_| {
+            log::error!(
+                "Failed to clone log file {:?} handle",
+                config.log_file_path()
+            );
             process::exit(1);
         });
 
-        daemonize = daemonize.stdout(stdout).stderr(stderr);
+        // seek to the end of log file[s]
+        // if not done it causes milter to stop unexpectedly on restart
+        // unless log file is empty at restart
+        out_file.seek(SeekFrom::End(0)).unwrap_or_else(|_| {
+            log::error!("Failed to seek cursor to end of log file");
+            process::exit(1);
+        });
+
+        daemonize = daemonize.stdout(out_file).stderr(err_file);
 
         match daemonize.start() {
-            Ok(_) => info!("Postkeeper Daemonized!"),
+            Ok(_) => log::info!("{} Daemonized!", NAME),
             Err(e) => {
-                error!("Daemonize process exited with Error, {}", e);
+                log::error!("Daemonize process exited with Error, {}", e);
                 process::exit(1)
             }
         }
-        milter::run(&config);
+        milter::run(config)
     }
 }

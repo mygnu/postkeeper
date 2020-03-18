@@ -9,3 +9,5 @@
 
 # line text starting with `#` treated as comment and ignored. either at the beginiing of the line 
 # and also in multiline context
+
+# values are treated case insensitive
