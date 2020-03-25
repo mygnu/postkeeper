@@ -127,19 +127,6 @@ impl Config {
             state = Invalid
         }
 
-        match file_permissions(self.log_file_path()) {
-            Ok(permission) => {
-                if permission == FilePermission::ReadOnly {
-                    log::error!("{:?} must be writable", self.log_file_path());
-                    state = Invalid;
-                }
-            }
-            _ => {
-                log::error!("{:?} is not a valid file", self.log_file_path());
-                state = Invalid
-            }
-        }
-
         if state == Invalid {
             Err(Error::config_err("Invalid Configuration!"))
         } else {
@@ -470,23 +457,6 @@ mod tests {
             .expect("Custom ini is should load");
 
         assert_eq!(config.socket(), "socket:11210@127.0.0.1");
-
-        assert_eq!(
-            config.validate(),
-            Err(Error::config_err("Invalid Configuration!"))
-        )
-    }
-
-    #[test]
-    fn custom_config_invalid_logfile() {
-        init_logging();
-        let config = Config::from_conf_file("tests/conf.d/invalid-logfile.ini")
-            .expect("Custom ini is should load");
-
-        assert_eq!(
-            config.log_file_path(),
-            &PathBuf::from("tests/sandbox/readonly.log")
-        );
 
         assert_eq!(
             config.validate(),

@@ -53,7 +53,7 @@ fn handle_negotiate(
     actions: Actions,
     protocol_opts: ProtocolOpts,
 ) -> milter::Result<(Status, Actions, ProtocolOpts)> {
-    log::info!("NEGOTIATE");
+    log::trace!("Stage: NEGOTIATE");
 
     log::trace!("Actions: {:?}", actions);
     log::trace!("Protocol options: {:?}", protocol_opts);
@@ -72,7 +72,7 @@ fn handle_connect(
     hostname: &str,
     socket_address: Option<SocketAddr>,
 ) -> milter::Result<Status> {
-    log::info!("CONNECT");
+    log::trace!("Stage: CONNECT");
 
     log::trace!("hostname: {}", hostname);
     if let Some(addr) = socket_address {
@@ -90,7 +90,7 @@ fn handle_connect(
 /// on_helo calback (returns -> Continue)
 #[on_helo(helo_callback)]
 fn handle_helo(_ctx: Context<()>, _helo_host: &str) -> milter::Result<Status> {
-    log::info!("HELO");
+    log::trace!("Stage: HELO");
 
     Ok(Status::Continue)
 }
@@ -98,7 +98,7 @@ fn handle_helo(_ctx: Context<()>, _helo_host: &str) -> milter::Result<Status> {
 /// on_mail calback (returns -> Continue)
 #[on_mail(mail_callback)]
 fn handle_mail(_ctx: Context<()>, _smtp_args: Vec<&str>) -> milter::Result<Status> {
-    log::trace!("MAIL");
+    log::trace!("Stage: MAIL");
 
     Ok(Status::Continue)
 }
@@ -106,7 +106,7 @@ fn handle_mail(_ctx: Context<()>, _smtp_args: Vec<&str>) -> milter::Result<Statu
 /// on_rcpt calback (returns -> Continue)
 #[on_rcpt(rcpt_callback)]
 fn handle_rcpt(ctx: Context<()>, _smtp_args: Vec<&str>) -> milter::Result<Status> {
-    log::info!("RCPT");
+    log::trace!("Stage: RCPT");
     print_macros(&ctx.api);
     Ok(Status::Continue)
 }
@@ -114,7 +114,7 @@ fn handle_rcpt(ctx: Context<()>, _smtp_args: Vec<&str>) -> milter::Result<Status
 /// on_data calback (returns -> Continue)
 #[on_data(data_callback)]
 fn handle_data(_ctx: Context<()>) -> milter::Result<Status> {
-    log::info!("DATA");
+    log::trace!("Stage: DATA");
 
     Ok(Status::Continue)
 }
@@ -123,7 +123,7 @@ fn handle_data(_ctx: Context<()>) -> milter::Result<Status> {
 /// we don't need to process headers
 #[on_header(header_callback)]
 fn handle_header(_ctx: Context<()>, name: &str, value: &str) -> milter::Result<Status> {
-    log::info!("HEADER");
+    log::trace!("Stage: HEADER");
     log::trace!("header {}: {}", name, value);
 
     // skip future calls to this callback
@@ -134,7 +134,7 @@ fn handle_header(_ctx: Context<()>, name: &str, value: &str) -> milter::Result<S
 /// on_eoh calback (returns -> Continue)
 #[on_eoh(eoh_callback)]
 fn handle_eoh(_ctx: Context<()>) -> milter::Result<Status> {
-    log::info!("EOH");
+    log::trace!("Stage: EOH");
 
     Ok(Status::Continue)
 }
@@ -142,7 +142,7 @@ fn handle_eoh(_ctx: Context<()>) -> milter::Result<Status> {
 /// on_body calback (returns -> Continue)
 #[on_body(body_callback)]
 fn handle_body(_ctx: Context<()>, _content: &[u8]) -> milter::Result<Status> {
-    log::info!("BODY");
+    log::trace!("Stage: BODY");
 
     Ok(Status::Continue)
 }
@@ -154,7 +154,7 @@ fn handle_body(_ctx: Context<()>, _content: &[u8]) -> milter::Result<Status> {
 /// if allowed, messages is accepted and a custom header is added.
 #[on_eom(eom_callback)]
 fn handle_eom(ctx: Context<()>) -> milter::Result<Status> {
-    log::info!("EOM");
+    log::info!("Stage: EOM");
 
     print_macros(&ctx.api);
     if let Some((recipient, sender)) = get_recipient_and_sender(&ctx.api) {
@@ -167,6 +167,8 @@ fn handle_eom(ctx: Context<()>) -> milter::Result<Status> {
                 recipient
             );
             return Ok(status);
+        } else {
+            log::info!("Block match not found");
         }
 
         if is_allowed(recipient, sender) {
@@ -178,6 +180,8 @@ fn handle_eom(ctx: Context<()>) -> milter::Result<Status> {
             ctx.api.add_header(POSTKEEPER_HEADER, "Yes")?;
             // accept the this message
             return Ok(Status::Accept);
+        } else {
+            log::info!("Allow match not found");
         }
     };
     Ok(Status::Continue)
@@ -186,7 +190,7 @@ fn handle_eom(ctx: Context<()>) -> milter::Result<Status> {
 /// on_abort calback (returns -> Continue)
 #[on_abort(abort_callback)]
 fn handle_abort(ctx: Context<()>) -> milter::Result<Status> {
-    log::warn!("ABORT");
+    log::warn!("Stage: ABORT");
     print_macros(&ctx.api);
     Ok(Status::Continue)
 }
@@ -194,14 +198,14 @@ fn handle_abort(ctx: Context<()>) -> milter::Result<Status> {
 /// on_close calback (returns -> Continue)
 #[on_close(close_callback)]
 fn handle_close(_ctx: Context<()>) -> milter::Result<Status> {
-    log::info!("CLOSE");
+    log::info!("Stage: CLOSE");
     Ok(Status::Continue)
 }
 
 /// on_unknown calback (returns -> Continue)
 #[on_unknown(unknown_callback)]
 fn handle_unknown(ctx: Context<()>, smtp_cmd: &str) -> milter::Result<Status> {
-    log::info!("UNKNOWN");
+    log::info!("Stage: UNKNOWN");
     log::trace!("smtp_cmd: {}", smtp_cmd);
     print_macros(&ctx.api);
 
@@ -228,16 +232,15 @@ pub fn get_recipient_and_sender(ctx_api: &impl MacroValue) -> Option<(&str, &str
         }
     };
 
-    log::debug!(
-        "found from macros: recpt: `{:?}`, sender: `{:?}`",
-        recipient,
-        sender
-    );
-
     if let (Some(recipient), Some(sender)) = (recipient, sender) {
+        log::debug!("found recpt: `{}`, sender: `{}`", recipient, sender);
         Some((recipient, sender))
     } else {
-        log::warn!("Either sender or recipient is missing, Returning None");
+        log::warn!(
+            "Either sender or recipient is missing recipient: {:?},sender:{:?}",
+            sender,
+            recipient
+        );
         None
     }
 }

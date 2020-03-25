@@ -72,9 +72,9 @@ pub fn load_maps_if_changed() {
             log::error!("{}", e);
         } else {
             // update the global last_updated time
-            log::debug!("Successfully Reloaded Allow Map");
             let mut last_updated = ALLOW_MAP_LAST_UPDATED.write().unwrap();
             *last_updated = SystemTime::now();
+            log::debug!("Successfully Reloaded Allow Map");
         }
     }
 
@@ -83,9 +83,9 @@ pub fn load_maps_if_changed() {
             log::error!("{}", e);
         } else {
             // update the global last_updated time
-            log::debug!("Successfully Reloaded Block Map");
             let mut last_updated = BLOCK_MAP_LAST_UPDATED.write().unwrap();
             *last_updated = SystemTime::now();
+            log::debug!("Successfully Reloaded Block Map");
         }
     }
 }
@@ -100,16 +100,11 @@ fn should_update(
     reload_interval: Duration,
 ) -> bool {
     if let Ok(elapsed) = last_updated.elapsed() {
+        log::trace!("Time elapsed since last reload {:?}", elapsed);
+
         if elapsed >= reload_interval {
             match last_modified(path.as_ref()) {
-                Ok(modified) => {
-                    log::trace!(
-                        "Map File Modified {:?}, last updated {:?}",
-                        modified,
-                        last_updated
-                    );
-                    modified > last_updated
-                }
+                Ok(modified) => modified > last_updated,
                 Err(e) => {
                     log::error!("Error checking {:?} metadata, {:?}", path.as_ref(), e);
                     false
@@ -153,7 +148,7 @@ pub fn is_blocked(recipient: &str, sender: &str) -> bool {
 pub fn is_allowed(recipient: &str, sender: &str) -> bool {
     let recipient = recipient.to_lowercase();
 
-    log::trace!(
+    log::info!(
         "trying to find allow match for recpt: {}, sender: {}",
         recipient,
         sender
