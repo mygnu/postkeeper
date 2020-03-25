@@ -1,5 +1,17 @@
 # Changelog 
 
+## [0.3.0] 2020-03-24
+
+### Added 
+- create logfile if doesn't exist
+- open logfile in append mode to avoid seeking cursor
+
+### Changed
+- dependencies updated
+- logging updated (after some live testing)
+- better comments in config file
+- remove logfile existence testing
+
 ## [0.2.0] 2020-03-XX
 
 ### Added

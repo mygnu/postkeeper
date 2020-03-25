@@ -18,11 +18,7 @@ use crate::config::Config;
 use clap::{load_yaml, App};
 use consts::*;
 use daemonize::Daemonize;
-use std::{
-    fs::OpenOptions,
-    io::{Seek, SeekFrom},
-    process,
-};
+use std::{fs::OpenOptions, process};
 
 fn main() {
     let yaml = load_yaml!("cli.yml");
@@ -41,8 +37,6 @@ fn main() {
 
     simple_logger::init_with_level(config.log_level()).expect("Logger Double Initialized");
 
-    log::info!("Config Loaded: {:#?}", &config);
-
     // exit with error if config is not valid
     if let Err(e) = config.validate() {
         log::error!("{}", e);
@@ -51,7 +45,7 @@ fn main() {
 
     // exit early if we only want to test config
     if matches.is_present(arg::TEST_CONFIG) {
-        log::debug!("Config test passed");
+        log::info!("Config Successfully Loaded: {:#?}", &config);
         process::exit(0);
     }
 
@@ -87,26 +81,19 @@ fn main() {
 
         // use the log file path for daemon stdout/stderr
         let err_file = OpenOptions::new()
-            .write(true)
+            .create(true)
+            .append(true)
             .open(config.log_file_path())
             .unwrap_or_else(|_| {
                 log::error!("Failed to open log file {:?}", config.log_file_path());
                 process::exit(1);
             });
 
-        let mut out_file = err_file.try_clone().unwrap_or_else(|_| {
+        let out_file = err_file.try_clone().unwrap_or_else(|_| {
             log::error!(
                 "Failed to clone log file {:?} handle",
                 config.log_file_path()
             );
-            process::exit(1);
-        });
-
-        // seek to the end of log file[s]
-        // if not done it causes milter to stop unexpectedly on restart
-        // unless log file is empty at restart
-        out_file.seek(SeekFrom::End(0)).unwrap_or_else(|_| {
-            log::error!("Failed to seek cursor to end of log file");
             process::exit(1);
         });
 
