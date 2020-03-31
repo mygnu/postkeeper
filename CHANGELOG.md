@@ -1,5 +1,10 @@
 # Changelog 
 
+## [0.3.1] 2020-03-31
+### Changed
+- reduce verbosity in System-V init script
+- store dev binaries with version string
+
 ## [0.3.0] 2020-03-24
 
 ### Added 

@@ -1,6 +1,6 @@
 [package]
 name = "postkeeper"
-version = "0.3.0"
+version = "0.3.1"
 authors = ["Enhance Ltd <backend@enhance.com>"]
 edition = "2018"
 default-run = "postkeeper"
