@@ -8,7 +8,7 @@ variables:
   GIT_SUBMODULE_STRATEGY: recursive
   TESTS_INSTANCE_BASENAME: postkeeper-test
   CARGO_HOME: ${CI_PROJECT_DIR}/.cargo
-  SERVICE_VERSION: 0.3.0
+  SERVICE_VERSION: 0.3.1
   PKG_CONFIG_PATH: . # needed by milter crate
 
 # Builds the postkeeper artefacts and runs the unit tests
@@ -44,7 +44,7 @@ upload_deb:
   script:
     - cat <(echo "$GCP_KEY" | base64 -d) >~/api_key
     - gcloud auth activate-service-account --key-file ~/api_key
-    - gsutil cp "target/debian/postkeeper_${SERVICE_VERSION}_amd64.deb" gs://postkeeper/postkeeper_dev_amd64.deb
+    - gsutil cp "target/debian/postkeeper_${SERVICE_VERSION}_amd64.deb" "gs://postkeeper/postkeeper_${SERVICE_VERSION}_dev_amd64.deb"
 
 # Upload release deb package to bucket
 release_deb:
@@ -56,5 +56,5 @@ release_deb:
   script:
     - cat <(echo "$GCP_KEY" | base64 -d) >~/api_key
     - gcloud auth activate-service-account --key-file ~/api_key
-    - gsutil cp "target/debian/postkeeper_${SERVICE_VERSION}_amd64.deb" gs://postkeeper
+    - gsutil cp "target/debian/postkeeper_${SERVICE_VERSION}_amd64.deb" "gs://postkeeper"
 

@@ -59,7 +59,7 @@ start() {
     fi
 
     # test config and exit on fail
-    $DAEMON $DAEMON_OPTS -t -v
+    $DAEMON $DAEMON_OPTS -t > /dev/null 2>&1
     if [[ $? -ne 0 ]] ; then
         exit 1
     fi
@@ -71,7 +71,7 @@ start() {
                 fi
     fi
 
-    $DAEMON $DAEMON_OPTS
+    $DAEMON $DAEMON_OPTS > /dev/null 2>&1
 
     # try for maximum of 10 seconds for service to start
     for i in {1..20}
