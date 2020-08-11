@@ -8,12 +8,12 @@ variables:
   GIT_SUBMODULE_STRATEGY: recursive
   TESTS_INSTANCE_BASENAME: postkeeper-test
   CARGO_HOME: ${CI_PROJECT_DIR}/.cargo
-  SERVICE_VERSION: 0.3.1
+  SERVICE_VERSION: 0.3.2
   PKG_CONFIG_PATH: . # needed by milter crate
 
 # Builds the postkeeper artefacts and runs the unit tests
 build_and_unit_tests:
-  image: registry.dev.enhance.com/backend/builder:ubuntu-pk1.42
+  image: registry.dev.enhance.com/backend/builder:ubuntu-pk1.45
   stage: build_and_unit_tests
   artifacts:
     paths:
@@ -50,7 +50,7 @@ upload_deb:
 release_deb:
   stage: upload_deb
   image: google/cloud-sdk:latest
-  only: 
+  only:
     refs:
       - master
   script:
