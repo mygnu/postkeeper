@@ -1,24 +1,30 @@
 [package]
 name = "postkeeper"
-version = "0.3.1"
+version = "0.3.2"
 authors = ["Enhance Ltd <backend@enhance.com>"]
 edition = "2018"
 default-run = "postkeeper"
 categories = ["email"]
-keywords = ["email", "milter", "allowlist", "blocklist", "blacklist", "whitelist"]
+keywords = [
+    "email",
+    "milter",
+    "allowlist",
+    "blocklist",
+    "blacklist",
+    "whitelist"
+]
 license = "GPL-3.0-or-later"
 readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 clap = { version = "2.33", features = ["yaml"] }
 daemonize = "0.4"
 lazy_static = "1.4"
 libc = "0.2"
-log= "0.4"
+log = "0.4"
 milter = "0.2"
-once_cell = "1.3"
+once_cell = "1.4"
 rust-ini = "0.15"
 simple_logger = "1.6" # simple_logger allows us to set logging level from config
 
@@ -52,7 +58,7 @@ assets = [
 ]
 # do not overwrite these files on package update
 conf-files = [
-    "/etc/postkeeper/postkeeper.ini", 
-    "/etc/postkeeper/allow.map", 
-    "/etc/postkeeper/block.map" 
-    ]
+    "/etc/postkeeper/postkeeper.ini",
+    "/etc/postkeeper/allow.map",
+    "/etc/postkeeper/block.map"
+]
