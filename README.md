@@ -1,9 +1,22 @@
 # postkeeper
 
-`postkeeper` is a [milter](https://en.wikipedia.org/wiki/Milter) application that filters emails for `postfix` or `sendmail`. It provides basic functionality for implementing `allow` or `block` lists per recipient.
+`postkeeper` is a [milter](https://en.wikipedia.org/wiki/Milter) application that filters emails
+for `postfix` or `sendmail`. It provides basic functionality for implementing `allow` or `block`
+lists per recipient.
 
-# How it would work
+### Building
+```bash
+# for rust binary
+cargo build --release
+# for debian package install `cargo install cargo-deb` and then
+cargo deb
+```
+
+
+### How it works
 See [DESIGN.md](DESIGN.md)
+
+
 
 # Licence
 Copyright  2020 Enhance Ltd <backend@enhance.com>
