@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.3.3] 2020-03-31
+## [0.3.3] 2020-08-25
 ### Changed
 - cleanup readme and design files
 - update dependencies
