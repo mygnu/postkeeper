@@ -1,4 +1,9 @@
-# Changelog 
+# Changelog
+
+## [0.3.3] 2020-03-31
+### Changed
+- cleanup readme and design files
+- update dependencies
 
 ## [0.3.1] 2020-03-31
 ### Changed
@@ -7,7 +12,7 @@
 
 ## [0.3.0] 2020-03-24
 
-### Added 
+### Added
 - create logfile if doesn't exist
 - open logfile in append mode to avoid seeking cursor
 
@@ -40,4 +45,4 @@
 - Provide default config and map files
 - Cli arguments and daemon/milter configuration implemented
 - Config validation implemented
-- upload `.deb` package to gcp bucket 
+- upload `.deb` package to gcp bucket

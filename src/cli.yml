@@ -1,5 +1,5 @@
 name: postkeeper
-version: 0.3.2
+version: 0.3.3
 author: Enhance Ltd <backend@enhance.com>
 about: allow/block list milter implementation
 args:

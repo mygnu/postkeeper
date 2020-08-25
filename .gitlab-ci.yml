@@ -8,7 +8,7 @@ variables:
   GIT_SUBMODULE_STRATEGY: recursive
   TESTS_INSTANCE_BASENAME: postkeeper-test
   CARGO_HOME: ${CI_PROJECT_DIR}/.cargo
-  SERVICE_VERSION: 0.3.2
+  SERVICE_VERSION: 0.3.3
   PKG_CONFIG_PATH: . # needed by milter crate
 
 # Builds the postkeeper artefacts and runs the unit tests
