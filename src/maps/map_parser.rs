@@ -10,15 +10,16 @@ use std::{
 };
 
 /// Each map value starts at the beginning of the line
-/// Multiline maps are allowed as consequent lines start with whitespace character[s].
-/// line text starting with `#` treated as comment and ignored. either at the beginning of the line
-/// and also in multiline context
+/// Multiline maps are allowed as consequent lines start with whitespace
+/// character[s]. line text starting with `#` treated as comment and ignored.
+/// either at the beginning of the line and also in multiline context
 /// comments are not permitted on lines with data
 ///
 /// values are treated case insensitive
 /// EXAMPLE:
-///  teresa@example.com gay@example.com candice@example.net cornelius@example.net jarret@example.org zachariah@example.org wilfred@example.com
-///     # this is allowed comment
+///  teresa@example.com gay@example.com candice@example.net
+/// cornelius@example.net jarret@example.org zachariah@example.org
+/// wilfred@example.com     # this is allowed comment
 ///     hildegard@example.com taurean@example.org
 ///  alayna@example.com claude@example.net stephan@example.net
 ///     jordan@example.net
@@ -38,7 +39,7 @@ impl MapParser {
         };
         // buffer to hold a single logical map line
         // we need this as map files can define values over multiple lines
-        let mut line_buf = String::new();
+        let mut process_buffer = String::new();
 
         for line in reader.lines() {
             match line {
@@ -48,29 +49,28 @@ impl MapParser {
                     if trimmed.starts_with('#') || trimmed.is_empty() {
                         continue;
                     }
-                    // if last line has been processed or we are still on the same logical line
-                    // and it starts with whitespace characters
-                    if line_buf.is_empty() || line.starts_with(char::is_whitespace) {
-                        // add line to buffer
-                        line_buf.push_str(&line);
-                    } else {
+                    // if process buffer is not empty and current line does not start
+                    // with white space (whitespace represents continuation of the
+                    // previous line)
+                    if !process_buffer.is_empty()
+                        && !line.starts_with(char::is_whitespace)
+                    {
                         // process the current logical line and clear the buffer
-                        parser.process_line(&line_buf);
-                        line_buf.clear();
-                        debug_assert!(line_buf.is_empty());
-
-                        // at this point previous logical line has been processed
-                        // add the current line to buffer
-                        line_buf.push_str(&line);
+                        parser.process_line(&process_buffer);
+                        process_buffer.clear();
                     }
+                    // at this point previous logical line has been
+                    // processed add the current
+                    // line to buffer
+                    process_buffer.push_str(&line);
                 }
                 Err(e) => {
-                    log::error!("Could not read next line with error {:?}", e);
+                    log::error!("Could not read next line, error {:?}", e);
                 }
             }
         }
         // process the last line in buffer
-        parser.process_line(&line_buf);
+        parser.process_line(&process_buffer);
         Ok(parser)
     }
 

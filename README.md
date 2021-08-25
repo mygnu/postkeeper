@@ -5,6 +5,7 @@ for `postfix` or `sendmail`. It provides basic functionality for implementing `a
 lists per recipient.
 
 ### Building
+On Debian and Ubuntu, install the package `libmilter-dev`.
 ```bash
 # for rust binary
 cargo build --release
