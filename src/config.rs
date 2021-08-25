@@ -38,7 +38,7 @@ pub struct Config {
 }
 
 impl Config {
-    /// genarate Config from CLI arguments
+    /// Generate Config from CLI arguments
     /// reads from default config file or custom path if provided in args
     /// replaces values from args if provided
     /// cli args have the highest precedent
@@ -79,14 +79,13 @@ impl Config {
             conf.group = Some(group);
         }
 
-        if let Some(on_block_action) =
-            matches
-                .value_of(arg::ON_BLOCK_ACTION)
-                .map(|on_block_action| match on_block_action {
-                    "discard" => milter::Status::Discard,
-                    "continue" => milter::Status::Continue,
-                    _ => milter::Status::Reject,
-                })
+        if let Some(on_block_action) = matches
+            .value_of(arg::ON_BLOCK_ACTION)
+            .map(|on_block_action| match on_block_action {
+                "discard" => milter::Status::Discard,
+                "continue" => milter::Status::Continue,
+                _ => milter::Status::Reject,
+            })
         {
             conf.on_block_action = on_block_action;
         }
@@ -105,7 +104,7 @@ impl Config {
         Ok(conf)
     }
 
-    /// validate configuration, daemon and milter should be able to run if
+    /// Validate configuration, daemon and milter should be able to run if
     /// validation returns without an error
     pub fn validate(&self) -> Result<()> {
         use Validation::*;
@@ -175,7 +174,7 @@ impl Config {
         self.reload_interval
     }
 
-    /// builds config from config ini path
+    /// Builds config from config ini path
     /// uses default values if not defined in the config
     /// to allow only define variable that require a change
     /// NOTE:
@@ -217,8 +216,8 @@ impl Config {
         let log_level = section
             .get("log_level")
             .map(|level| {
-                // log level progerssion log::error!, log::warn!, log::info!, log::debug! and log::trace!
-                // default to error
+                // log level progression log::error!, log::warn!, log::info!,
+                // log::debug! and log::trace! default to error
                 match level {
                     "warn" => log::Level::Warn,
                     "info" => log::Level::Info,
@@ -240,7 +239,7 @@ impl Config {
 
         let reload_interval = section
             .get("reload_interval")
-            .unwrap_or_else(|| default::RELOAD_INTERVAL)
+            .unwrap_or(default::RELOAD_INTERVAL)
             .parse::<u64>()
             .map(Duration::from_secs)
             .map_err(|e| {
@@ -263,14 +262,14 @@ impl Config {
     }
 }
 
-// holds config validation state
+// Holds config validation state
 #[derive(PartialEq)]
 enum Validation {
     Valid,
     Invalid,
 }
 
-// validates socket address for format and connectivity
+// Validates socket address for format and connectivity
 // milter would fail if socket is already in use
 fn is_socket_valid(socket: &str) -> bool {
     use std::net::TcpListener;
@@ -287,7 +286,7 @@ fn is_socket_valid(socket: &str) -> bool {
     if addr.is_none() {
         return false;
     }
-    let addr: Vec<&str> = addr.unwrap_or_else(|| &"").split('@').collect();
+    let addr: Vec<&str> = addr.unwrap_or(&"").split('@').collect();
 
     let tcp_addr = format!(
         "{}:{}",
@@ -312,7 +311,7 @@ enum FilePermission {
     Writable,
 }
 
-// check if path can be written to
+// Check if path can be written to
 // returns file permission enum indicating ReadOnly or Writable
 // error if file does not exist or user doesn't have permission to read it
 fn file_permissions(path: impl AsRef<Path>) -> Result<FilePermission> {
@@ -346,7 +345,7 @@ mod tests {
 
     fn init_logging() {
         INIT_LOGGING.call_once(|| {
-            simple_logger::init_by_env();
+            simple_logger::init_with_env().unwrap();
         });
     }
 
@@ -355,7 +354,7 @@ mod tests {
         init_logging();
         // default postkeeper must load
         let config = Config::from_conf_file("assets/etc/postkeeper.ini")
-            .expect("Default postkeeper.ini is should load");
+            .expect("Default postkeeper.ini should load");
 
         assert_eq!(config.pid_file_path(), &PathBuf::from(default::PIDFILE));
         assert_eq!(config.log_file_path(), &PathBuf::from(default::LOGFILE));
@@ -376,16 +375,16 @@ mod tests {
     #[test]
     fn non_existant_config() {
         init_logging();
-        let err =
-            Config::from_conf_file("non-existant.ini").expect_err("Config file should not load");
+        let err = Config::from_conf_file("non-existant.ini")
+            .expect_err("Config file should not load");
         assert_eq!(err, Error::config_err("File not found"))
     }
 
     #[test]
     fn custom_config_values() {
         init_logging();
-        let config =
-            Config::from_conf_file("tests/conf.d/valid.ini").expect("Custom ini is should load");
+        let config = Config::from_conf_file("tests/conf.d/valid.ini")
+            .expect("Custom ini should load");
 
         assert_eq!(
             config.pid_file_path(),
@@ -419,8 +418,9 @@ mod tests {
     #[test]
     fn custom_config_invalid_allow_map() {
         init_logging();
-        let config = Config::from_conf_file("tests/conf.d/invalid-allow-map.ini")
-            .expect("Custom ini is should load");
+        let config =
+            Config::from_conf_file("tests/conf.d/invalid-allow-map.ini")
+                .expect("Custom ini should load");
 
         assert_eq!(
             config.allow_map_path(),
@@ -436,8 +436,9 @@ mod tests {
     #[test]
     fn custom_config_invalid_block_map() {
         init_logging();
-        let config = Config::from_conf_file("tests/conf.d/invalid-block-map.ini")
-            .expect("Custom ini is should load");
+        let config =
+            Config::from_conf_file("tests/conf.d/invalid-block-map.ini")
+                .expect("Custom ini should load");
 
         assert_eq!(
             config.block_map_path(),
@@ -454,7 +455,7 @@ mod tests {
     fn custom_config_invalid_socket() {
         init_logging();
         let config = Config::from_conf_file("tests/conf.d/invalid-socket.ini")
-            .expect("Custom ini is should load");
+            .expect("Custom ini should load");
 
         assert_eq!(config.socket(), "socket:11210@127.0.0.1");
 

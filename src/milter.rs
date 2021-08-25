@@ -27,9 +27,9 @@
 //! the connection-scoped stages `connect` and `close`.
 //!
 //! At any point during processing of a *message* the flow may be diverted to
-//! [`abort`], in which case the remaining message stages are skipped. milter will continue
-//! processing continues at the beginning of the message loop for next message. In any case
-//! `close` will be called at the very end.
+//! [`abort`], in which case the remaining message stages are skipped. milter
+//! will continue processing continues at the beginning of the message loop for
+//! next message. In any case `close` will be called at the very end.
 //!
 //! For each stage, a response status returned from the callback determines what
 //! to do with the entity being processed: whether to continue, accept, or
@@ -38,7 +38,6 @@
 //!
 //! Further detail on this and on the high-level design of the milter library
 //! can be found in its [documentation](https://salsa.debian.org/debian/sendmail/tree/master/libmilter/docs).
-//!
 
 use crate::config::{global_conf, init_global_conf, Config};
 use crate::consts::*;
@@ -97,7 +96,10 @@ fn handle_helo(_ctx: Context<()>, _helo_host: &str) -> milter::Result<Status> {
 
 /// on_mail calback (returns -> Continue)
 #[on_mail(mail_callback)]
-fn handle_mail(_ctx: Context<()>, _smtp_args: Vec<&str>) -> milter::Result<Status> {
+fn handle_mail(
+    _ctx: Context<()>,
+    _smtp_args: Vec<&str>,
+) -> milter::Result<Status> {
     log::trace!("Stage: MAIL");
 
     Ok(Status::Continue)
@@ -105,7 +107,10 @@ fn handle_mail(_ctx: Context<()>, _smtp_args: Vec<&str>) -> milter::Result<Statu
 
 /// on_rcpt calback (returns -> Continue)
 #[on_rcpt(rcpt_callback)]
-fn handle_rcpt(ctx: Context<()>, _smtp_args: Vec<&str>) -> milter::Result<Status> {
+fn handle_rcpt(
+    ctx: Context<()>,
+    _smtp_args: Vec<&str>,
+) -> milter::Result<Status> {
     log::trace!("Stage: RCPT");
     print_macros(&ctx.api);
     Ok(Status::Continue)
@@ -122,7 +127,11 @@ fn handle_data(_ctx: Context<()>) -> milter::Result<Status> {
 /// on_headers calback (returns -> Skip)
 /// we don't need to process headers
 #[on_header(header_callback)]
-fn handle_header(_ctx: Context<()>, name: &str, value: &str) -> milter::Result<Status> {
+fn handle_header(
+    _ctx: Context<()>,
+    name: &str,
+    value: &str,
+) -> milter::Result<Status> {
     log::trace!("Stage: HEADER");
     log::trace!("header {}: {}", name, value);
 
@@ -148,8 +157,8 @@ fn handle_body(_ctx: Context<()>, _content: &[u8]) -> milter::Result<Status> {
 }
 
 /// on_eom calback
-/// end of message: on this callback we try to find the match if a given sender is
-/// in `allow-list` or in `block-list` for the recipient
+/// end of message: on this callback we try to find the match if a given sender
+/// is in `allow-list` or in `block-list` for the recipient
 /// if blocked configured status will be returned
 /// if allowed, messages is accepted and a custom header is added.
 #[on_eom(eom_callback)]
@@ -215,7 +224,9 @@ fn handle_unknown(ctx: Context<()>, smtp_cmd: &str) -> milter::Result<Status> {
 /// try get recipient and sender from milter contex api
 /// returns Some(recipient, sender) if successful
 /// None if both values cannot be acquired from MTA macros
-pub fn get_recipient_and_sender(ctx_api: &impl MacroValue) -> Option<(&str, &str)> {
+pub fn get_recipient_and_sender(
+    ctx_api: &impl MacroValue,
+) -> Option<(&str, &str)> {
     let recipient = match ctx_api.macro_value(MACRO_RECPT_ADDR) {
         Ok(recipient) => recipient,
         Err(e) => {
@@ -247,7 +258,8 @@ pub fn get_recipient_and_sender(ctx_api: &impl MacroValue) -> Option<(&str, &str
 
 /// consumes and initiates the global config
 /// create and run the milter with callbacks
-/// This is a blocking function only returns once the milter is shut-down or returns an error
+/// This is a blocking function only returns once the milter is shut-down or
+/// returns an error
 pub fn run(config: Config) {
     let mut milter = Milter::new(config.socket());
     // initialize OnceCell global config object
@@ -285,13 +297,14 @@ pub fn run(config: Config) {
     }
 }
 
-/// MTA sends information to Milter via macros, these macros can be requested by the Milter itself
-/// or can be defined in MTA (Postfix) config suggesting what it should send to the Milter
-/// These macros are available in the `Context` argument that is passed in to each callback
-/// we try to print all availabel macros from this context
-/// NOTE: this is used only for logging purposes to stdout or logfile in trace mode
-/// MACRO: is quoted text that expands to specific information
-/// i.e. {rcpt_addr} expands to recipient adderess for that message.
+/// MTA sends information to Milter via macros, these macros can be requested by
+/// the Milter itself or can be defined in MTA (Postfix) config suggesting what
+/// it should send to the Milter These macros are available in the `Context`
+/// argument that is passed in to each callback we try to print all availabel
+/// macros from this context NOTE: this is used only for logging purposes to
+/// stdout or logfile in trace mode MACRO: is quoted text that expands to
+/// specific information i.e. {rcpt_addr} expands to recipient adderess for that
+/// message.
 fn print_macros(ctx: &impl MacroValue) {
     print_macro(ctx, "i");
     print_macro(ctx, "j");

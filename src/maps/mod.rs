@@ -99,14 +99,15 @@ fn should_update(
     last_updated: SystemTime,
     reload_interval: Duration,
 ) -> bool {
+    let path = path.as_ref();
     if let Ok(elapsed) = last_updated.elapsed() {
         log::trace!("Time elapsed since last reload {:?}", elapsed);
 
         if elapsed >= reload_interval {
-            match last_modified(path.as_ref()) {
+            match last_modified(path) {
                 Ok(modified) => modified > last_updated,
                 Err(e) => {
-                    log::error!("Error checking {:?} metadata, {:?}", path.as_ref(), e);
+                    log::error!("Error checking {:?} metadata, {:?}", path, e);
                     false
                 }
             }

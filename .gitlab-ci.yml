@@ -5,15 +5,13 @@ stages:
 
 
 variables:
-  GIT_SUBMODULE_STRATEGY: recursive
-  TESTS_INSTANCE_BASENAME: postkeeper-test
   CARGO_HOME: ${CI_PROJECT_DIR}/.cargo
-  SERVICE_VERSION: 0.3.3
-  PKG_CONFIG_PATH: . # needed by milter crate
+  SERVICE_VERSION: 0.3.4
+  PKG_CONFIG_PATH: . # needed by milter crate to build
 
 # Builds the postkeeper artefacts and runs the unit tests
 build_and_unit_tests:
-  image: registry.dev.enhance.com/backend/builder:ubuntu-pk1.45
+  image: docker-staging.enhance.com/builder:ubuntu18.04_1.54
   stage: build_and_unit_tests
   artifacts:
     paths:
@@ -32,10 +30,11 @@ build_and_unit_tests:
      - ssh-add <(echo "$SSH_KEY" | base64 -d)
      - mkdir -p ~/.ssh
      - chmod 700 ~/.ssh
+     - cargo clippy --tests -- -D warnings
+     - RUST_LOG=postkeeper=trace cargo test --release -- --nocapture --test-threads=1
      - cargo build --release
      # create debian package
      - cargo-deb
-     - RUST_LOG=postkeeper=trace cargo test --release -- --nocapture --test-threads=1
 
 # Upload development deb package to bucket
 upload_deb:

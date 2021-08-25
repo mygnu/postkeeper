@@ -7,8 +7,8 @@ pub struct Error {
 }
 
 /// This enumeration is the main information about an error. Every Error type
-/// must be constructed with at least this information, that allows to differentiate
-/// errors between each other with minimal information.
+/// must be constructed with at least this information, that allows to
+/// differentiate errors between each other with minimal information.
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Kind {
     ConfigError,
@@ -62,7 +62,7 @@ impl Default for Error {
 /// PostKeeper Result type with custom error
 pub type Result<T> = std::result::Result<T, Error>;
 
-use ini::ini::Error as IniError;
+use ini::Error as IniError;
 use std::io;
 
 impl From<IniError> for Error {

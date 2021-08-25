@@ -1,0 +1,14 @@
+# Experimental Cross copilation via docker container
+# install cross
+# cargo install --git https://github.com/rust-embedded/cross.git --branch master
+# build
+# cross build --target x86_64-unknown-linux-gnu --release --all-features
+[target.x86_64-unknown-linux-gnu]
+xargo = false
+image = "docker-staging.enhance.com/builder:ubuntu18.04_1.54"
+
+# pass PKG_CONFIG_PATH variable to allow build `milter` crate
+[build.env]
+passthrough = [
+    "PKG_CONFIG_PATH",
+]

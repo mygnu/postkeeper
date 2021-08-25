@@ -1,4 +1,5 @@
 fn main() {
+    println!("cargo:rerun-if-changed=Cargo.toml");
     // regex example without \ escape character
     // /^([[:space:]]*SERVICE_VERSION:).*/s//\1 1.0.0-alpha.8/
     // ^\ # start at the beginning of the line

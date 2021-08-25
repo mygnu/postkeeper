@@ -1,5 +1,5 @@
 name: postkeeper
-version: 0.3.3
+version: 0.3.4
 author: Enhance Ltd <backend@enhance.com>
 about: allow/block list milter implementation
 args:
@@ -13,7 +13,7 @@ args:
         short: p
         long: socket
         value_name: SOCKET
-        help: path to socket file, default "/var/run/postkeeper/postkeeper.sock"
+        help: TCP socket that postkeeper listens on, default is `inet:11210@localhost`
         takes_value: true
     - logfile:
         short: L
@@ -32,24 +32,24 @@ args:
         short: u
         long: user
         value_name: USER
-        help: daemon username, default "postkeeper" 
+        help: daemon username, default "postkeeper"
     - group:
         short: g
         long: group
         value_name: GROUP
-        help: daemon groupname, default "postkeeper" 
+        help: daemon groupname, default "postkeeper"
         takes_value: true
     - allow-map:
         short: a
         long: allow-map
         value_name: ALLOW_MAP
-        help: path to map file, default "/etc/postkeeper/allow.map" 
+        help: path to map file, default "/etc/postkeeper/allow.map"
         takes_value: true
     - block-map:
         short: b
         long: block-map
         value_name: BLOCK_MAP
-        help: path to map file, default "/etc/postkeeper/block.map" 
+        help: path to map file, default "/etc/postkeeper/block.map"
         takes_value: true
     - foreground:
         short: f
@@ -72,8 +72,8 @@ args:
         takes_value: false
     - on-block-action:
         long: on-block-action
-        help: action to take on match with block list 
+        help: action to take on match with block list
         takes_value: true
         possible_values: ["reject", "discard", "continue"]
-           
+
 

@@ -1,5 +1,4 @@
 //! postkeeper milter daemon for postfix/sendmail
-//!
 
 #![warn(missing_docs)]
 #![warn(unused_variables)]
@@ -35,7 +34,8 @@ fn main() {
         }
     };
 
-    simple_logger::init_with_level(config.log_level()).expect("Logger Double Initialized");
+    simple_logger::init_with_level(config.log_level())
+        .expect("Logger Double Initialized");
 
     // exit with error if config is not valid
     if let Err(e) = config.validate() {
@@ -61,9 +61,7 @@ fn main() {
 
     // run in forground if cli arg is present otherwise
     // daemonize the process
-    if matches.is_present(arg::FOREGROUND) {
-        milter::run(config)
-    } else {
+    if !matches.is_present(arg::FOREGROUND) {
         let mut daemonize = Daemonize::new()
             .working_directory(default::RUN_DIR) // default is "/"
             .pid_file(config.pid_file_path());
@@ -85,7 +83,10 @@ fn main() {
             .append(true)
             .open(config.log_file_path())
             .unwrap_or_else(|_| {
-                log::error!("Failed to open log file {:?}", config.log_file_path());
+                log::error!(
+                    "Failed to open log file {:?}",
+                    config.log_file_path()
+                );
                 process::exit(1);
             });
 
@@ -106,6 +107,6 @@ fn main() {
                 process::exit(1)
             }
         }
-        milter::run(config)
     }
+    milter::run(config)
 }

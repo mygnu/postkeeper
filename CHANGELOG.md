@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.4] 2021-08-25
+### Changed
+- update builder image and dependencies
+- MSRV now is `v1.54`
+
+
 ## [0.3.3] 2020-08-25
 ### Changed
 - cleanup readme and design files
