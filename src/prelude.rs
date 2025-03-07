@@ -1,1 +1,1 @@
-pub use crate::error::{Error, Kind, Result};
+pub use crate::error::{Error, Result};

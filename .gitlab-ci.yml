@@ -3,7 +3,6 @@ stages:
   - upload_deb
   - release_deb
 
-
 variables:
   CARGO_HOME: ${CI_PROJECT_DIR}/.cargo
   SERVICE_VERSION: 0.3.4
@@ -26,15 +25,15 @@ build_and_unit_tests:
     # after the build has finished we upload the dependencies to S3
     - cache-s3 save -p ${CARGO_HOME} -p target/release --git-branch ${CI_PROJECT_NAME}
   script:
-     - eval $(ssh-agent -s)
-     - ssh-add <(echo "$SSH_KEY" | base64 -d)
-     - mkdir -p ~/.ssh
-     - chmod 700 ~/.ssh
-     - cargo clippy --tests -- -D warnings
-     - RUST_LOG=postkeeper=trace cargo test --release -- --nocapture --test-threads=1
-     - cargo build --release
-     # create debian package
-     - cargo-deb
+    - eval $(ssh-agent -s)
+    - ssh-add <(echo "$SSH_KEY" | base64 -d)
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - cargo clippy --tests -- -D warnings
+    - RUST_LOG=postkeeper=trace cargo test --release -- --nocapture --test-threads=1
+    - cargo build --release
+    # create debian package
+    - cargo-deb
 
 # Upload development deb package to bucket
 upload_deb:
@@ -56,4 +55,3 @@ release_deb:
     - cat <(echo "$GCP_KEY" | base64 -d) >~/api_key
     - gcloud auth activate-service-account --key-file ~/api_key
     - gsutil cp "target/debian/postkeeper_${SERVICE_VERSION}_amd64.deb" "gs://postkeeper"
-

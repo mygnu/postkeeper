@@ -79,13 +79,14 @@ impl Config {
             conf.group = Some(group);
         }
 
-        if let Some(on_block_action) = matches
-            .value_of(arg::ON_BLOCK_ACTION)
-            .map(|on_block_action| match on_block_action {
-                "discard" => milter::Status::Discard,
-                "continue" => milter::Status::Continue,
-                _ => milter::Status::Reject,
-            })
+        if let Some(on_block_action) =
+            matches
+                .value_of(arg::ON_BLOCK_ACTION)
+                .map(|on_block_action| match on_block_action {
+                    "discard" => milter::Status::Discard,
+                    "continue" => milter::Status::Continue,
+                    _ => milter::Status::Reject,
+                })
         {
             conf.on_block_action = on_block_action;
         }
@@ -278,7 +279,7 @@ fn is_socket_valid(socket: &str) -> bool {
     let parts: Vec<&str> = socket.split(':').collect();
 
     // socket must start with `inet`
-    if parts.get(0) != Some(&"inet") {
+    if parts.first() != Some(&"inet") {
         log::trace!("socket must start with `inet`");
         return false;
     }
@@ -291,7 +292,7 @@ fn is_socket_valid(socket: &str) -> bool {
     let tcp_addr = format!(
         "{}:{}",
         addr.get(1).unwrap_or(&""),
-        addr.get(0).unwrap_or(&"")
+        addr.first().unwrap_or(&"")
     );
 
     log::trace!("Checking connectivity to `{}`", tcp_addr);
@@ -375,16 +376,16 @@ mod tests {
     #[test]
     fn non_existant_config() {
         init_logging();
-        let err = Config::from_conf_file("non-existant.ini")
-            .expect_err("Config file should not load");
+        let err =
+            Config::from_conf_file("non-existant.ini").expect_err("Config file should not load");
         assert_eq!(err, Error::config_err("File not found"))
     }
 
     #[test]
     fn custom_config_values() {
         init_logging();
-        let config = Config::from_conf_file("tests/conf.d/valid.ini")
-            .expect("Custom ini should load");
+        let config =
+            Config::from_conf_file("tests/conf.d/valid.ini").expect("Custom ini should load");
 
         assert_eq!(
             config.pid_file_path(),
@@ -418,9 +419,8 @@ mod tests {
     #[test]
     fn custom_config_invalid_allow_map() {
         init_logging();
-        let config =
-            Config::from_conf_file("tests/conf.d/invalid-allow-map.ini")
-                .expect("Custom ini should load");
+        let config = Config::from_conf_file("tests/conf.d/invalid-allow-map.ini")
+            .expect("Custom ini should load");
 
         assert_eq!(
             config.allow_map_path(),
@@ -436,9 +436,8 @@ mod tests {
     #[test]
     fn custom_config_invalid_block_map() {
         init_logging();
-        let config =
-            Config::from_conf_file("tests/conf.d/invalid-block-map.ini")
-                .expect("Custom ini should load");
+        let config = Config::from_conf_file("tests/conf.d/invalid-block-map.ini")
+            .expect("Custom ini should load");
 
         assert_eq!(
             config.block_map_path(),
